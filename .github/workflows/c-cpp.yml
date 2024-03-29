@@ -1,4 +1,4 @@
-name: C/C++ CI
+name: C/C++ CI with Release
 
 on:
   push:
@@ -7,17 +7,52 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  build-and-release:
 
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: configure
-      run: ./configure
-    - name: make
-      run: make
-    - name: make check
-      run: make check
-    - name: make distcheck
-      run: make distcheck
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake
+
+      - name: Configure CMake
+        run: cmake -S . -B cmake-build-debug
+
+      - name: Build project
+        run: cmake --build cmake-build-debug --target file_analyzer
+
+      - name: List test files
+        run: ls test_files
+
+      - name: Run tests
+        run: |
+          for file in test_files/*; do
+            echo "Testing file: $file"
+            ./cmake-build-debug/file_analyzer "$file" -tr 0.1
+          done
+
+      - name: Archive production artifacts
+        run: zip -r release_${{ github.sha }}.zip cmake-build-debug/file_analyzer
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.sha }}
+          draft: false
+          prerelease: false
+
+      - name: Upload release artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release_${{ github.sha }}.zip
+          asset_name: release_${{ github.sha }}.zip
+          asset_content_type: application/zip
