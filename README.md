@@ -1,4 +1,4 @@
-
+[![C/C++ CI with Release](https://github.com/m4tveevm/file_analyzer/actions/workflows/c-cpp.yml/badge.svg)](https://github.com/m4tveevm/file_analyzer/actions/workflows/c-cpp.yml)
 # File Byte Frequency Analyzer
 
 This program analyzes binary files to determine the frequency of each byte occurrence and displays the statistics in both table format and as a histogram.
